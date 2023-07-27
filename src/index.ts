@@ -160,7 +160,7 @@ export default function app(data: object, validate: IValidate) {
 
 // const data = app({
 //     username: "",
-//     email: "phuoc.le.van0210@gmail.com",
+//     email: "dsasdad0@gmail.com",
 //     password: "123231231",
 //     re_password: "123231231",
 //     vnd: "50",
