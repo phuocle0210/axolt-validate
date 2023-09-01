@@ -37,6 +37,10 @@ interface IAttributeName {
     [name: string]: string
 }
 
+interface ICustom {
+    [name: string]: unknown
+}
+
 let attribute: IAttributeName;
 
 class Validation {
@@ -50,97 +54,112 @@ class Validation {
         this.attribute = attribute;
     }
 
-    private checkObjectValidate(name: string, objValidate: IStore) {
-        return name in objValidate && objValidate[name as keyof typeof objValidate];
+    private handleRequired(value: string) {
+        return !!value;
     }
 
-    protected checkRequired(value: any) {
-        return !(!Boolean(value) || value === undefined || value === "");
+    private handleMaxLength(value: string, store: IStore) {
+        return store.maxLength && this.handleRequired(value) && value.length <= store.maxLength;  
     }
 
-    protected checkMaxLength(objValidate: IStore, value: any) {
-        return typeof(value) === "string" && value.length <= (objValidate as any).maxLength ;
+    private handleMinLength(value: string, store: IStore) {
+        return store.minLength && this.handleRequired(value) && value.length >= store.minLength;  
     }
 
-    protected checkMinLength(objValidate: IStore, value: any) {
-        return typeof(value) === "string" && value.length >= (objValidate as any).minLength;
+    private handleIsString(value: unknown) {
+        return typeof(value) === "string";
     }
 
-    protected checkNumber(value: any) {
-        return Number(value) && !isNaN(value);
+    private handleIsNumber(value: unknown) {
+        return !isNaN(Number(value));
     }
 
-    protected checkMax(objValidate: IStore, value: any) {
-        return this.checkNumber(value) && Number(value) <= Number((objValidate as any).max);
+    private handleRegex(value: unknown, store: IStore) {
+        return typeof(value) === "string" && store.regex && value.match(store.regex) !== null;
     }
 
-    protected checkMin(objValidate: IStore, value: any) {
-        return this.checkNumber(value) && Number(value) >= Number((objValidate as any).min);
+    private handleMax(value: unknown, store: IStore) {
+        return this.handleIsNumber(value) && store.max && Number(value) <= store.max;
     }
 
-    protected isString(value: any) {
-        return typeof(value) === "string" && value !== "";
+    private handleMin(value: unknown, store: IStore) {
+        return this.handleIsNumber(value) && store.min && Number(value) >= store.min;
     }
 
-    protected confirm(value: any, valueConfirm: any) {
-        return value === valueConfirm;
+    private handleConfirm(nameValueCheck: string, value: unknown) {
+        const valueCheck = this.data[nameValueCheck as keyof typeof this.data];
+        return valueCheck === value;
     }
 
-    protected regex(objValidate: IStore, value: any) {
-        return typeof(value) === "string" && value.match(objValidate.regex as RegExp) !== null;
-    }
+    private handleMessage(name: string) {
+        const _name: string = this.attribute[name] ?? name;
 
-    private handleMessage(message: string, name: string, value?: any) {
-        if(value !== undefined && (message.includes("[max]") || message.includes("[min]")))
-            message = message.replace(message.includes("[max]") ? "[max]" : "[min]", value as string);
+        return (key: string, custom?: ICustom) => {
+            let message: string = validateMessage[key as keyof typeof validateMessage];
 
-        return { message: message.replace("[attribute]", name) }
+            if(custom) {
+                const _key = Object.keys(custom)[0];
+                message = message.replace(_key, custom[_key] as string);
+            }
+    
+            message = message.replace("[attribute]", _name);
+    
+            return message;
+        }
     }
 
     public result() {
-        const listResults: IValidateResult = {
+        const result: IValidateResult = {
             isError: false,
             errors: []
-        }
+        };
 
-        for(let key of Object.keys(this.data)) {
-            const objValidate = this.validate[key];
+        for(const key of Object.keys(this.validate)) {
             const value = this.data[key as keyof typeof this.data];
-            key = this.attribute[key as keyof typeof this.attribute] ?? key;
 
-            if(!objValidate) continue;
+            const listValidate = this.validate[key];
+            const message = this.handleMessage(key);
 
-            if(this.checkObjectValidate("required", objValidate) && !this.checkRequired(value)) 
-                listResults.errors.push(this.handleMessage(validateMessage.required, key));
-            
-            if(this.checkObjectValidate("maxLength", objValidate) && !this.checkMaxLength(objValidate, value)) 
-                listResults.errors.push(this.handleMessage(validateMessage.maxLength, key, objValidate.maxLength));
+            if("required" in listValidate && listValidate.required && !this.handleRequired(value)) {
+                result.errors.push({ message: message("required") })
+            }
 
-            if(this.checkObjectValidate("minLength", objValidate) && !this.checkMinLength(objValidate, value))
-                listResults.errors.push(this.handleMessage(validateMessage.minLength, key, objValidate.minLength));
+            if("maxLength" in listValidate && !this.handleMaxLength(value, listValidate)) {
+                result.errors.push({ message: message("maxLength", { "[max]": listValidate.maxLength }) });
+            }
 
-            if(this.checkObjectValidate("isNumber", objValidate) && !this.checkNumber(value))
-                listResults.errors.push(this.handleMessage(validateMessage.isNumber, key));
+            if("minLength" in listValidate && !this.handleMinLength(value, listValidate)) {
+                result.errors.push({ message: message("minLength", { "[min]": listValidate.minLength }) });
+            }
 
-            if(this.checkObjectValidate("max", objValidate) && !this.checkMax(objValidate, value))
-                listResults.errors.push(this.handleMessage(validateMessage.max, key, objValidate.max));
+            if("isString" in listValidate && listValidate.isString && !this.handleIsString(value)) {
+                result.errors.push({ message: message("isString") });
+            }
 
-            if(this.checkObjectValidate("min", objValidate) && !this.checkMin(objValidate, value))
-                listResults.errors.push(this.handleMessage(validateMessage.min, key, objValidate.min));
+            if("isNumber" in listValidate && listValidate.isNumber && !this.handleIsNumber(value)) {
+                result.errors.push({ message: message("isNumber") });
+            }
 
-            if(this.checkObjectValidate("confirm", objValidate) && !this.confirm(value, this.data[objValidate.confirm as keyof typeof this.data]))
-                listResults.errors.push(this.handleMessage(validateMessage.confirm, key));
+            if("regex" in listValidate && !this.handleRegex(value, listValidate)) {
+                result.errors.push({ message: message("regex") });
+            }
 
-            if(this.checkObjectValidate("regex", objValidate) && !this.regex(objValidate, value))
-                listResults.errors.push(this.handleMessage(validateMessage.regex, key));
+            if("max" in listValidate && !this.handleMax(value, listValidate)) {
+                result.errors.push({ message: message("max", { "[max]": listValidate.max }) });
+            }
+
+            if("min" in listValidate && !this.handleMin(value, listValidate)) {
+                result.errors.push({ message: message("min", { "[min]": listValidate.min }) });
+            }
+
+            if("confirm" in listValidate && listValidate.confirm && !this.handleConfirm(listValidate.confirm, value)) {
+                result.errors.push({ message: message("confirm") });
+            }
         }
 
-        return {
-            isError: (listResults.errors.length > 0),
-            errors: listResults.errors
-        }
+        result.isError = result.errors.length > 0;
+        return result;
     }
-
 }
 
 
@@ -148,7 +167,11 @@ export function setAttribute(attr: IAttributeName) {
     attribute = attr;
 }
 
-export default function app(data: object, validate: IValidate) {
+export default function app(data: object, validate: IValidate, attr: IAttributeName = {}) {
+    if(Object.keys(attr).length > 0) {
+        attribute = attr;
+    }
+
     const validation = new Validation(data, validate, attribute);
     return validation.result();
 }
@@ -159,10 +182,10 @@ export default function app(data: object, validate: IValidate) {
 // })
 
 // const data = app({
-//     username: "",
+//     username: "dwqdd",
 //     email: "dsasdad0@gmail.com",
-//     password: "123231231",
-//     re_password: "123231231",
+//     password: "1",
+//     re_password: "1",
 //     vnd: "50",
 //     status: "1231"
 // }, {
@@ -171,6 +194,10 @@ export default function app(data: object, validate: IValidate) {
 //     vnd: {required: true, isNumber: true, max: 50},
 //     email: {required: true, regex: /^[^\s;]+@[^\s;]+\.[^\s;]+(?:;[^\s;]+@[^\s;]+\.[^\s;]+)*$/},
 //     status: {isBoolean: true}
+// }, {
+//     username: "Tên đăng nhập",
+//     password: "Mật khẩu",
+//     re_password: "Xác minh mật khẩu"
 // });
 
 // console.log(data);

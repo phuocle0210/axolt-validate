@@ -8,5 +8,6 @@ exports.default = {
     minLength: "[attribute] tối thiểu là [min] ký tự!",
     isNumber: "[attribute] phải là số!",
     confirm: "[attribute] không trùng nhau!",
-    regex: "[attribute] không hợp lệ!"
+    regex: "[attribute] không hợp lệ!",
+    isString: "[attribute] phải là chuỗi!"
 };

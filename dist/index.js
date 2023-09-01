@@ -19,81 +19,96 @@ class Validation {
         this.validate = validate;
         this.attribute = attribute;
     }
-    checkObjectValidate(name, objValidate) {
-        return name in objValidate && objValidate[name];
+    handleRequired(value) {
+        return !!value;
     }
-    checkRequired(value) {
-        return !(!Boolean(value) || value === undefined || value === "");
+    handleMaxLength(value, store) {
+        return store.maxLength && this.handleRequired(value) && value.length <= store.maxLength;
     }
-    checkMaxLength(objValidate, value) {
-        return typeof (value) === "string" && value.length <= objValidate.maxLength;
+    handleMinLength(value, store) {
+        return store.minLength && this.handleRequired(value) && value.length >= store.minLength;
     }
-    checkMinLength(objValidate, value) {
-        return typeof (value) === "string" && value.length >= objValidate.minLength;
+    handleIsString(value) {
+        return typeof (value) === "string";
     }
-    checkNumber(value) {
-        return Number(value) && !isNaN(value);
+    handleIsNumber(value) {
+        return !isNaN(Number(value));
     }
-    checkMax(objValidate, value) {
-        return this.checkNumber(value) && Number(value) <= Number(objValidate.max);
+    handleRegex(value, store) {
+        return typeof (value) === "string" && store.regex && value.match(store.regex) !== null;
     }
-    checkMin(objValidate, value) {
-        return this.checkNumber(value) && Number(value) >= Number(objValidate.min);
+    handleMax(value, store) {
+        return this.handleIsNumber(value) && store.max && Number(value) <= store.max;
     }
-    isString(value) {
-        return typeof (value) === "string" && value !== "";
+    handleMin(value, store) {
+        return this.handleIsNumber(value) && store.min && Number(value) >= store.min;
     }
-    confirm(value, valueConfirm) {
-        return value === valueConfirm;
+    handleConfirm(nameValueCheck, value) {
+        const valueCheck = this.data[nameValueCheck];
+        return valueCheck === value;
     }
-    regex(objValidate, value) {
-        return typeof (value) === "string" && value.match(objValidate.regex) !== null;
-    }
-    handleMessage(message, name, value) {
-        if (value !== undefined && (message.includes("[max]") || message.includes("[min]")))
-            message = message.replace(message.includes("[max]") ? "[max]" : "[min]", value);
-        return { message: message.replace("[attribute]", name) };
+    handleMessage(name) {
+        var _a;
+        const _name = (_a = this.attribute[name]) !== null && _a !== void 0 ? _a : name;
+        return (key, custom) => {
+            let message = message_1.default[key];
+            if (custom) {
+                const _key = Object.keys(custom)[0];
+                message = message.replace(_key, custom[_key]);
+            }
+            message = message.replace("[attribute]", _name);
+            return message;
+        };
     }
     result() {
-        var _a;
-        const listResults = {
+        const result = {
             isError: false,
             errors: []
         };
-        for (let key of Object.keys(this.data)) {
-            const objValidate = this.validate[key];
+        for (const key of Object.keys(this.validate)) {
             const value = this.data[key];
-            key = (_a = this.attribute[key]) !== null && _a !== void 0 ? _a : key;
-            if (!objValidate)
-                continue;
-            if (this.checkObjectValidate("required", objValidate) && !this.checkRequired(value))
-                listResults.errors.push(this.handleMessage(message_1.default.required, key));
-            if (this.checkObjectValidate("maxLength", objValidate) && !this.checkMaxLength(objValidate, value))
-                listResults.errors.push(this.handleMessage(message_1.default.maxLength, key, objValidate.maxLength));
-            if (this.checkObjectValidate("minLength", objValidate) && !this.checkMinLength(objValidate, value))
-                listResults.errors.push(this.handleMessage(message_1.default.minLength, key, objValidate.minLength));
-            if (this.checkObjectValidate("isNumber", objValidate) && !this.checkNumber(value))
-                listResults.errors.push(this.handleMessage(message_1.default.isNumber, key));
-            if (this.checkObjectValidate("max", objValidate) && !this.checkMax(objValidate, value))
-                listResults.errors.push(this.handleMessage(message_1.default.max, key, objValidate.max));
-            if (this.checkObjectValidate("min", objValidate) && !this.checkMin(objValidate, value))
-                listResults.errors.push(this.handleMessage(message_1.default.min, key, objValidate.min));
-            if (this.checkObjectValidate("confirm", objValidate) && !this.confirm(value, this.data[objValidate.confirm]))
-                listResults.errors.push(this.handleMessage(message_1.default.confirm, key));
-            if (this.checkObjectValidate("regex", objValidate) && !this.regex(objValidate, value))
-                listResults.errors.push(this.handleMessage(message_1.default.regex, key));
+            const listValidate = this.validate[key];
+            const message = this.handleMessage(key);
+            if ("required" in listValidate && listValidate.required && !this.handleRequired(value)) {
+                result.errors.push({ message: message("required") });
+            }
+            if ("maxLength" in listValidate && !this.handleMaxLength(value, listValidate)) {
+                result.errors.push({ message: message("maxLength", { "[max]": listValidate.maxLength }) });
+            }
+            if ("minLength" in listValidate && !this.handleMinLength(value, listValidate)) {
+                result.errors.push({ message: message("minLength", { "[min]": listValidate.minLength }) });
+            }
+            if ("isString" in listValidate && listValidate.isString && !this.handleIsString(value)) {
+                result.errors.push({ message: message("isString") });
+            }
+            if ("isNumber" in listValidate && listValidate.isNumber && !this.handleIsNumber(value)) {
+                result.errors.push({ message: message("isNumber") });
+            }
+            if ("regex" in listValidate && !this.handleRegex(value, listValidate)) {
+                result.errors.push({ message: message("regex") });
+            }
+            if ("max" in listValidate && !this.handleMax(value, listValidate)) {
+                result.errors.push({ message: message("max", { "[max]": listValidate.max }) });
+            }
+            if ("min" in listValidate && !this.handleMin(value, listValidate)) {
+                result.errors.push({ message: message("min", { "[min]": listValidate.min }) });
+            }
+            if ("confirm" in listValidate && listValidate.confirm && !this.handleConfirm(listValidate.confirm, value)) {
+                result.errors.push({ message: message("confirm") });
+            }
         }
-        return {
-            isError: (listResults.errors.length > 0),
-            errors: listResults.errors
-        };
+        result.isError = result.errors.length > 0;
+        return result;
     }
 }
 function setAttribute(attr) {
     attribute = attr;
 }
 exports.setAttribute = setAttribute;
-function app(data, validate) {
+function app(data, validate, attr = {}) {
+    if (Object.keys(attr).length > 0) {
+        attribute = attr;
+    }
     const validation = new Validation(data, validate, attribute);
     return validation.result();
 }
@@ -103,10 +118,10 @@ exports.default = app;
 //     email: "Email"
 // })
 // const data = app({
-//     username: "",
+//     username: "dwqdd",
 //     email: "dsasdad0@gmail.com",
-//     password: "123231231",
-//     re_password: "123231231",
+//     password: "1",
+//     re_password: "1",
 //     vnd: "50",
 //     status: "1231"
 // }, {
@@ -115,5 +130,9 @@ exports.default = app;
 //     vnd: {required: true, isNumber: true, max: 50},
 //     email: {required: true, regex: /^[^\s;]+@[^\s;]+\.[^\s;]+(?:;[^\s;]+@[^\s;]+\.[^\s;]+)*$/},
 //     status: {isBoolean: true}
+// }, {
+//     username: "Tên đăng nhập",
+//     password: "Mật khẩu",
+//     re_password: "Xác minh mật khẩu"
 // });
 // console.log(data);

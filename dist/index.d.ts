@@ -16,12 +16,13 @@ interface IValidate {
 interface IValidateError {
     message: string;
 }
+interface IValidateResult {
+    isError: boolean;
+    errors: IValidateError[];
+}
 interface IAttributeName {
     [name: string]: string;
 }
 export declare function setAttribute(attr: IAttributeName): void;
-export default function app(data: object, validate: IValidate): {
-    isError: boolean;
-    errors: IValidateError[];
-};
+export default function app(data: object, validate: IValidate, attr?: IAttributeName): IValidateResult;
 export {};
