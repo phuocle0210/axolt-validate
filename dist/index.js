@@ -35,7 +35,7 @@ class Validation {
         return !isNaN(Number(value));
     }
     handleRegex(value, store) {
-        if (store.required && !store.required)
+        if (store.required !== undefined && !store.required)
             return true;
         return typeof (value) === "string" && store.regex && value.match(store.regex) !== null;
     }
