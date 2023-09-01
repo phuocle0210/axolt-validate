@@ -35,6 +35,8 @@ class Validation {
         return !isNaN(Number(value));
     }
     handleRegex(value, store) {
+        if (store.required && !store.required)
+            return true;
         return typeof (value) === "string" && store.regex && value.match(store.regex) !== null;
     }
     handleMax(value, store) {
@@ -49,7 +51,7 @@ class Validation {
     }
     handleMessage(name) {
         var _a;
-        const _name = (_a = this.attribute[name]) !== null && _a !== void 0 ? _a : name;
+        const _name = this.attribute ? (_a = this.attribute[name]) !== null && _a !== void 0 ? _a : name : name;
         return (key, custom) => {
             let message = message_1.default[key];
             if (custom) {

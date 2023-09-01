@@ -75,6 +75,7 @@ class Validation {
     }
 
     private handleRegex(value: unknown, store: IStore) {
+        if(store.required && !store.required) return true;
         return typeof(value) === "string" && store.regex && value.match(store.regex) !== null;
     }
 
@@ -92,7 +93,7 @@ class Validation {
     }
 
     private handleMessage(name: string) {
-        const _name: string = this.attribute[name] ?? name;
+        const _name: string = this.attribute ? this.attribute[name] ?? name : name;
 
         return (key: string, custom?: ICustom) => {
             let message: string = validateMessage[key as keyof typeof validateMessage];
