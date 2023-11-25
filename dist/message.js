@@ -9,5 +9,6 @@ exports.default = {
     isNumber: "[attribute] phải là số!",
     confirm: "[attribute] không trùng nhau!",
     regex: "[attribute] không hợp lệ!",
-    isString: "[attribute] phải là chuỗi!"
+    isString: "[attribute] phải là chuỗi!",
+    integer: "[attribute] phải là số nguyên"
 };

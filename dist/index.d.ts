@@ -9,6 +9,7 @@ interface IStore {
     max?: number;
     min?: number;
     confirm?: string;
+    integer?: boolean;
 }
 interface IValidate {
     [name: string]: IStore;

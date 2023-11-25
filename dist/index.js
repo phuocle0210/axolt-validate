@@ -23,10 +23,13 @@ class Validation {
         return !!value;
     }
     handleMaxLength(value, store) {
-        return store.maxLength && this.handleRequired(value) && value.length <= store.maxLength;
+        return store.maxLength && this.handleRequired(value) && value.toString().length <= store.maxLength;
+    }
+    handleInteger(value) {
+        return Math.floor(value) - value === 0;
     }
     handleMinLength(value, store) {
-        return store.minLength && this.handleRequired(value) && value.length >= store.minLength;
+        return store.minLength && this.handleRequired(value) && value.toString().length >= store.minLength;
     }
     handleIsString(value) {
         return typeof (value) === "string";
@@ -83,6 +86,8 @@ class Validation {
             if ("isString" in listValidate && listValidate.isString && !this.handleIsString(value)) {
                 result.errors.push({ message: message("isString") });
             }
+            if ("integer" in listValidate && listValidate.integer && !this.handleInteger(value))
+                result.errors.push({ message: message("integer") });
             if ("isNumber" in listValidate && listValidate.isNumber && !this.handleIsNumber(value)) {
                 result.errors.push({ message: message("isNumber") });
             }

@@ -8,5 +8,6 @@ declare const _default: {
     confirm: string;
     regex: string;
     isString: string;
+    integer: string;
 };
 export default _default;

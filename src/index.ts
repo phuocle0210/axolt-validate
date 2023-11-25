@@ -18,6 +18,7 @@ interface IStore {
     max?: number,
     min?: number,
     confirm?: string,
+    integer?: boolean
 }
 
 interface IValidate {
@@ -59,11 +60,15 @@ class Validation {
     }
 
     private handleMaxLength(value: string, store: IStore) {
-        return store.maxLength && this.handleRequired(value) && value.length <= store.maxLength;  
+        return store.maxLength && this.handleRequired(value) && value.toString().length <= store.maxLength;  
+    }
+
+    private handleInteger(value: number) {
+        return Math.floor(value) - value === 0;
     }
 
     private handleMinLength(value: string, store: IStore) {
-        return store.minLength && this.handleRequired(value) && value.length >= store.minLength;  
+        return store.minLength && this.handleRequired(value) && value.toString().length >= store.minLength;  
     }
 
     private handleIsString(value: unknown) {
@@ -136,6 +141,9 @@ class Validation {
             if("isString" in listValidate && listValidate.isString && !this.handleIsString(value)) {
                 result.errors.push({ message: message("isString") });
             }
+
+            if("integer" in listValidate && listValidate.integer && !this.handleInteger(value))
+                result.errors.push({ message: message("integer") });
 
             if("isNumber" in listValidate && listValidate.isNumber && !this.handleIsNumber(value)) {
                 result.errors.push({ message: message("isNumber") });
